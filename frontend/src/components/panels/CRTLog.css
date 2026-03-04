@@ -1,0 +1,42 @@
+.crt-container {
+    flex-grow: 1;
+    background-color: #000;
+    border: 2px solid var(--border);
+    box-shadow: inset 0 0 10px rgba(0, 255, 65, 0.2);
+    padding: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.crt-screen {
+    flex-grow: 1;
+    overflow-y: auto;
+    font-size: 6px;
+    color: #00ff41;
+    text-shadow: 0 0 2px #00ff41;
+    line-height: 1.5;
+    font-family: 'Press Start 2P', monospace;
+    text-transform: uppercase;
+}
+
+.crt-line {
+    word-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+.crt-cursor {
+    animation: blinkCursor 0.5s step-end infinite;
+}
+
+@keyframes blinkCursor {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
+}
