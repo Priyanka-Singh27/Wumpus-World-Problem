@@ -76,6 +76,11 @@ GLOBAL_RL_TRAINER: Optional[RLTrainer] = None
 GLOBAL_RL_LOCK = threading.Lock()
 
 
+VALID_DIFFICULTIES = set(DIFFICULTY.keys())   # {"easy","medium","hard","expert"}
+VALID_ACTIONS      = {a.value for a in Action}
+SESSION_TTL        = 3600   # seconds — sessions idle longer are purged
+
+
 def get_session(sid: str) -> Optional[Session]:
     with SESSION_LOCK:
         s = SESSIONS.get(sid)
@@ -90,6 +95,23 @@ def new_session(world: WumpusWorld) -> Session:
     with SESSION_LOCK:
         SESSIONS[sid] = s
     return s
+
+
+def _cleanup_sessions():
+    """Background thread: purge sessions idle for > SESSION_TTL seconds."""
+    while True:
+        time.sleep(300)   # check every 5 minutes
+        cutoff = time.time() - SESSION_TTL
+        with SESSION_LOCK:
+            stale = [sid for sid, s in SESSIONS.items() if s.last_used < cutoff]
+            for sid in stale:
+                del SESSIONS[sid]
+        if stale:
+            print(f"[cleanup] Purged {len(stale)} stale session(s)")
+
+
+_cleanup_thread = threading.Thread(target=_cleanup_sessions, daemon=True)
+_cleanup_thread.start()
 
 
 # ─── Request handler ──────────────────────────────────────────────────────────
@@ -129,13 +151,14 @@ class WumpusHandler(BaseHTTPRequestHandler):
         path   = parsed.path
 
         routes = {
-            "/api/game/new":        self._game_new,
-            "/api/game/step":       self._game_step,
-            "/api/game/reset":      self._game_reset,
-            "/api/agent/kb/step":   self._kb_step,
-            "/api/agent/rl/step":   self._rl_step,
-            "/api/agent/rl/train":  self._rl_train,
-            "/api/bench/run":       self._bench_run,
+            "/api/game/new":           self._game_new,
+            "/api/game/step":          self._game_step,
+            "/api/game/reset":         self._game_reset,
+            "/api/agent/kb/step":      self._kb_step,
+            "/api/agent/rl/step":      self._rl_step,
+            "/api/agent/random/step":  self._random_step,
+            "/api/agent/rl/train":     self._rl_train,
+            "/api/bench/run":          self._bench_run,
         }
 
         handler = routes.get(path)
@@ -160,8 +183,25 @@ class WumpusHandler(BaseHTTPRequestHandler):
         seed       = body.get("seed", None)
         custom_cfg = body.get("config", None)
 
+        # --- Validate ---
+        if difficulty not in VALID_DIFFICULTIES:
+            return self._send(400, {
+                "error": f"Invalid difficulty '{difficulty}'. "
+                         f"Valid: {sorted(VALID_DIFFICULTIES)}"
+            })
+        if seed is not None:
+            try:
+                seed = int(seed)
+                if not (0 <= seed <= 2**31):
+                    raise ValueError()
+            except (TypeError, ValueError):
+                return self._send(400, {"error": "seed must be an integer in [0, 2^31]"})
+
         if custom_cfg:
-            cfg = WorldConfig(seed=seed, **custom_cfg)
+            try:
+                cfg = WorldConfig(seed=seed, **custom_cfg)
+            except (TypeError, KeyError) as exc:
+                return self._send(400, {"error": f"Invalid config: {exc}"})
         else:
             d   = DIFFICULTY[difficulty]
             cfg = WorldConfig(seed=seed, **d)
@@ -182,8 +222,15 @@ class WumpusHandler(BaseHTTPRequestHandler):
         POST /api/game/step
         Body: { session_id: str, action: str }
         """
-        sid    = body.get("session_id", "")
+        sid        = body.get("session_id", "")
         action_str = body.get("action", "")
+
+        if not sid:
+            return self._send(400, {"error": "session_id is required"})
+        if action_str not in VALID_ACTIONS:
+            return self._send(400, {
+                "error": f"Invalid action '{action_str}'. Valid: {sorted(VALID_ACTIONS)}"
+            })
 
         session = get_session(sid)
         if not session:
@@ -192,8 +239,7 @@ class WumpusHandler(BaseHTTPRequestHandler):
         try:
             action = Action(action_str)
         except ValueError:
-            return self._send(400, {"error": f"Invalid action: {action_str}. "
-                                    f"Valid: {[a.value for a in Action]}"})
+            return self._send(400, {"error": f"Invalid action: {action_str}"})
 
         if session.world.result != GameResult.ONGOING:
             return self._send(400, {"error": "Game is over. Call /api/game/reset"})
@@ -201,11 +247,11 @@ class WumpusHandler(BaseHTTPRequestHandler):
         percept, reward, done = session.world.step(action)
 
         self._send(200, {
-            "percept":    percept.to_dict(),
-            "reward":     reward,
-            "done":       done,
-            "result":     session.world.result.value,
-            "state":      session.world.to_dict(reveal=done),
+            "percept": percept.to_dict(),
+            "reward":  reward,
+            "done":    done,
+            "result":  session.world.result.value,
+            "state":   session.world.to_dict(reveal=done),
         })
 
     def _game_state(self, params: dict):
@@ -287,6 +333,49 @@ class WumpusHandler(BaseHTTPRequestHandler):
             "result":      world.result.value,
             "state":       world.to_dict(reveal=done),
             "kb_snapshot": agent.kb_snapshot(),
+        })
+
+    # ── RL Agent endpoints ────────────────────────────────────────────────────
+
+    def _random_step(self, body: dict):
+        """
+        POST /api/agent/random/step
+        Body: { session_id: str }
+        Runs ONE Random agent step (with smart biases: grab gold, climb with gold).
+        """
+        sid     = body.get("session_id", "")
+        if not sid:
+            return self._send(400, {"error": "session_id is required"})
+
+        session = get_session(sid)
+        if not session:
+            return self._send(404, {"error": "Session not found"})
+
+        if session.world.result != GameResult.ONGOING:
+            return self._send(400, {"error": "Game over"})
+
+        world   = session.world
+        percept = world._last_percept
+
+        # Use the RandomAgent class (with smart grab/climb biases)
+        rand_agent = RandomAgent()
+        action = rand_agent.choose_action(
+            percept,
+            (world.agent.row, world.agent.col),
+            world.agent.direction,
+            world.agent.has_gold,
+            world.agent.arrows,
+        )
+
+        percept, reward, done = world.step(action)
+
+        self._send(200, {
+            "action":  action.value,
+            "percept": percept.to_dict(),
+            "reward":  reward,
+            "done":    done,
+            "result":  world.result.value,
+            "state":   world.to_dict(reveal=done),
         })
 
     # ── RL Agent endpoints ────────────────────────────────────────────────────
@@ -411,8 +500,21 @@ class WumpusHandler(BaseHTTPRequestHandler):
         Body: { difficulty?: str, n_episodes?: int, rl_pretrain?: int }
         """
         difficulty  = body.get("difficulty",  "medium")
-        n_episodes  = int(body.get("n_episodes",  100))
-        rl_pretrain = int(body.get("rl_pretrain", 500))
+        n_episodes  = body.get("n_episodes",  100)
+        rl_pretrain = body.get("rl_pretrain", 500)
+
+        # --- Validate ---
+        if difficulty not in VALID_DIFFICULTIES:
+            return self._send(400, {"error": f"Invalid difficulty. Valid: {sorted(VALID_DIFFICULTIES)}"})
+        try:
+            n_episodes  = int(n_episodes)
+            rl_pretrain = int(rl_pretrain)
+            if n_episodes < 1 or n_episodes > 10000:
+                raise ValueError("n_episodes must be 1–10000")
+            if rl_pretrain < 0 or rl_pretrain > 50000:
+                raise ValueError("rl_pretrain must be 0–50000")
+        except (TypeError, ValueError) as exc:
+            return self._send(400, {"error": str(exc)})
 
         bench  = Benchmarker(
             difficulty  = difficulty,
@@ -470,24 +572,27 @@ class WumpusHandler(BaseHTTPRequestHandler):
 def run(host: str = "0.0.0.0", port: int = 8765):
     server = HTTPServer((host, port), WumpusHandler)
     print(f"""
-╔══════════════════════════════════════════════╗
-║     WUMPUS WORLD — BACKEND API SERVER        ║
-╠══════════════════════════════════════════════╣
-║  Host : {host:<36} ║
-║  Port : {port:<36} ║
-╠══════════════════════════════════════════════╣
-║  Endpoints:                                  ║
-║  POST /api/game/new          New session     ║
-║  POST /api/game/step         Take action     ║
-║  GET  /api/game/state        World state     ║
-║  POST /api/game/reset        Reset           ║
-║  GET  /api/game/history      Replay data     ║
-║  POST /api/agent/kb/step     KB auto-step    ║
-║  POST /api/agent/rl/train    Train RL        ║
-║  GET  /api/agent/rl/snapshot Q-heatmap       ║
-║  POST /api/bench/run         Benchmark all   ║
-║  GET  /health                Status          ║
-╚══════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════╗
+║     WUMPUS WORLD — BACKEND API SERVER            ║
+╠══════════════════════════════════════════════════╣
+║  Host : {host:<42} ║
+║  Port : {port:<42} ║
+╠══════════════════════════════════════════════════╣
+║  Endpoints:                                      ║
+║  POST /api/game/new              New session     ║
+║  POST /api/game/step             Take action     ║
+║  GET  /api/game/state            World state     ║
+║  POST /api/game/reset            Reset           ║
+║  GET  /api/game/history          Replay data     ║
+║  POST /api/agent/kb/step         KB auto-step    ║
+║  POST /api/agent/rl/step         RL auto-step    ║
+║  POST /api/agent/random/step     Random step     ║
+║  POST /api/agent/rl/train        Train RL        ║
+║  GET  /api/agent/rl/snapshot     Q-heatmap       ║
+║  POST /api/bench/run             Benchmark all   ║
+║  GET  /api/world/generate        Seed preview    ║
+║  GET  /health                    Status          ║
+╚══════════════════════════════════════════════════╝
 """)
     try:
         server.serve_forever()

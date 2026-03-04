@@ -50,6 +50,15 @@ export async function rlStep(sessionId) {
     return res.json();
 }
 
+export async function randomStep(sessionId) {
+    const res = await fetch(`${BASE}/api/agent/random/step`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId })
+    });
+    return res.json();
+}
+
 export async function trainRL(difficulty, config) {
     const res = await fetch(`${BASE}/api/agent/rl/train`, {
         method: 'POST',

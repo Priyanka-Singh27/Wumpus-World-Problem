@@ -64,9 +64,15 @@ export default function Cell({ cell, row, col, isFogged, isCurrent, agentState, 
 
             {/* 4. Player */}
             {isCurrent && agentState && (
-                <div className="sprite-wrap">
-                    <SpriteAgent direction={agentState.direction} isDead={!agentState.alive} />
-                </div>
+                <>
+                    <div className="sprite-wrap">
+                        <SpriteAgent direction={agentState.direction} isDead={!agentState.alive} />
+                    </div>
+                    {/* Directional arrow indicator */}
+                    {agentState.alive && (
+                        <div className={`dir-indicator dir-${agentState.direction}`} />
+                    )}
+                </>
             )}
 
             {/* 5. Percept label */}

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { useMetricsStore } from '../store/metricsStore';
-import { kbStep, stepGame, rlStep } from '../api/client';
+import { kbStep, stepGame, rlStep, randomStep } from '../api/client';
 
 // Actions available for random agent (frontend-only, no backend endpoint needed)
 const RANDOM_ACTIONS = ['MOVE_FORWARD', 'MOVE_FORWARD', 'MOVE_FORWARD',
@@ -38,14 +38,13 @@ export function useAgent() {
         return () => clearInterval(interval);
     }, [isRunning, sessionId, speed, agentType, stepOnce, recordEpisode, toggleAutoRun]);
 
-    // ── Random agent auto-step (frontend random action selection) ───────────
+    // ── Random agent auto-step (uses backend smart-random endpoint) ─────────
     useEffect(() => {
         let interval;
         if (isRunning && sessionId && agentType === 'random') {
             interval = setInterval(async () => {
                 try {
-                    const action = randomAction();
-                    const res = await stepGame(sessionId, action);
+                    const res = await randomStep(sessionId);
                     if (res.state && res.percept) {
                         stepOnce(res.state, res.percept, null);
                     }
