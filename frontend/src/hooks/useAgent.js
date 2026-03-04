@@ -11,8 +11,17 @@ function randomAction() {
     return RANDOM_ACTIONS[Math.floor(Math.random() * RANDOM_ACTIONS.length)];
 }
 
+// Helper: fire toast based on response
+function checkToast(res, prevWorldState, showToast) {
+    if (res.percept?.scream) {
+        showToast({ type: 'kill', message: '💀 WUMPUS SLAIN!' });
+    } else if (res.state?.agent?.has_gold && !prevWorldState?.agent?.has_gold) {
+        showToast({ type: 'gold', message: '🥇 GOLD GRABBED!' });
+    }
+}
+
 export function useAgent() {
-    const { sessionId, isRunning, speed, agentType, stepOnce, toggleAutoRun, worldState } = useGameStore();
+    const { sessionId, isRunning, speed, agentType, stepOnce, toggleAutoRun, showToast } = useGameStore();
     const recordEpisode = useMetricsStore(s => s.recordEpisode);
 
     // ── KB agent auto-step ──────────────────────────────────────────────────
@@ -21,9 +30,11 @@ export function useAgent() {
         if (isRunning && sessionId && agentType === 'kb') {
             interval = setInterval(async () => {
                 try {
+                    const prev = useGameStore.getState().worldState;
                     const res = await kbStep(sessionId);
                     if (res.state && res.percept) {
                         stepOnce(res.state, res.percept, res.kb_snapshot);
+                        checkToast(res, prev, showToast);
                     }
                     if (res.done) {
                         recordEpisode(res.result);
@@ -36,7 +47,7 @@ export function useAgent() {
             }, Math.max(speed, 50));
         }
         return () => clearInterval(interval);
-    }, [isRunning, sessionId, speed, agentType, stepOnce, recordEpisode, toggleAutoRun]);
+    }, [isRunning, sessionId, speed, agentType, stepOnce, recordEpisode, toggleAutoRun, showToast]);
 
     // ── Random agent auto-step (uses backend smart-random endpoint) ─────────
     useEffect(() => {
@@ -44,9 +55,11 @@ export function useAgent() {
         if (isRunning && sessionId && agentType === 'random') {
             interval = setInterval(async () => {
                 try {
+                    const prev = useGameStore.getState().worldState;
                     const res = await randomStep(sessionId);
                     if (res.state && res.percept) {
                         stepOnce(res.state, res.percept, null);
+                        checkToast(res, prev, showToast);
                     }
                     if (res.done) {
                         recordEpisode(res.result);
@@ -59,7 +72,7 @@ export function useAgent() {
             }, Math.max(speed, 50));
         }
         return () => clearInterval(interval);
-    }, [isRunning, sessionId, speed, agentType, stepOnce, recordEpisode, toggleAutoRun]);
+    }, [isRunning, sessionId, speed, agentType, stepOnce, recordEpisode, toggleAutoRun, showToast]);
 
     // ── RL agent auto-step ──────────────────────────────────────────────────
     useEffect(() => {
@@ -67,9 +80,11 @@ export function useAgent() {
         if (isRunning && sessionId && agentType === 'rl') {
             interval = setInterval(async () => {
                 try {
+                    const prev = useGameStore.getState().worldState;
                     const res = await rlStep(sessionId);
                     if (res.state && res.percept) {
                         stepOnce(res.state, res.percept, null);
+                        checkToast(res, prev, showToast);
                     }
                     if (res.done) {
                         recordEpisode(res.result);
@@ -82,5 +97,6 @@ export function useAgent() {
             }, Math.max(speed, 50));
         }
         return () => clearInterval(interval);
-    }, [isRunning, sessionId, speed, agentType, stepOnce, recordEpisode, toggleAutoRun]);
+    }, [isRunning, sessionId, speed, agentType, stepOnce, recordEpisode, toggleAutoRun, showToast]);
 }
+

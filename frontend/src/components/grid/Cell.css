@@ -156,3 +156,16 @@
     border-width: 8px 10px 8px 0;
     border-color: transparent #22aacc transparent transparent;
 }
+
+/* ── Gold badge pulse (when player stands on gold) ───────── */
+@keyframes goldPulse {
+    from {
+        filter: drop-shadow(0 0 3px #ffd700);
+        transform: scale(1);
+    }
+
+    to {
+        filter: drop-shadow(0 0 8px #ff8800);
+        transform: scale(1.18);
+    }
+}

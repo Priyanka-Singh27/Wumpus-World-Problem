@@ -48,11 +48,26 @@ export default function Cell({ cell, row, col, isFogged, isCurrent, agentState, 
                 </div>
             )}
 
-            {/* 2. Gold */}
+            {/* 2. Gold — centered when player is NOT here, badge when player IS here */}
             {has_gold && !has_pit && (
-                <div className="sprite-wrap">
-                    <SpriteGold />
-                </div>
+                isCurrent ? (
+                    // Small badge in bottom-right so player sprite doesn't cover it
+                    <div style={{
+                        position: 'absolute',
+                        bottom: 5,
+                        right: 5,
+                        fontSize: 20,
+                        lineHeight: 1,
+                        filter: 'drop-shadow(0 0 4px #ffd700)',
+                        animation: 'goldPulse 0.8s ease-in-out infinite alternate',
+                        zIndex: 5,
+                        pointerEvents: 'none',
+                    }}>🟡</div>
+                ) : (
+                    <div className="sprite-wrap">
+                        <SpriteGold />
+                    </div>
+                )
             )}
 
             {/* 3. Wumpus */}

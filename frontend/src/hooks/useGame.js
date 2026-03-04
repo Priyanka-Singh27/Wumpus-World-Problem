@@ -4,7 +4,7 @@ import { useMetricsStore } from '../store/metricsStore';
 import { stepGame } from '../api/client';
 
 export function useGame() {
-    const { sessionId, isRunning, stepOnce } = useGameStore();
+    const { sessionId, isRunning, stepOnce, showToast } = useGameStore();
     const recordEpisode = useMetricsStore(s => s.recordEpisode);
 
     useEffect(() => {
@@ -28,6 +28,14 @@ export function useGame() {
                 try {
                     const res = await stepGame(sessionId, action);
                     stepOnce(res.state, res.percept);
+
+                    // 🎉 Celebration toasts
+                    if (res.percept?.scream) {
+                        showToast({ type: 'kill', message: '💀 WUMPUS SLAIN!' });
+                    } else if (res.state?.agent?.has_gold && !worldState?.agent?.has_gold) {
+                        showToast({ type: 'gold', message: '🥇 GOLD GRABBED!' });
+                    }
+
                     if (res.done) {
                         recordEpisode(res.result);
                     }
@@ -39,5 +47,6 @@ export function useGame() {
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [sessionId, isRunning, stepOnce, recordEpisode]);
+    }, [sessionId, isRunning, stepOnce, recordEpisode, showToast]);
 }
+

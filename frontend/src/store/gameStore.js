@@ -15,11 +15,14 @@ export const useGameStore = create((set, get) => ({
     humanSession: null,
     aiSession: null,
 
+    // Toast: { type: 'gold' | 'kill', message: string } | null
+    toast: null,
+
     startGame: (sessionId, state, percept, seed) => set({
-        sessionId, worldState: state, percept, seed, isRunning: false, kbSnapshot: null
+        sessionId, worldState: state, percept, seed, isRunning: false, kbSnapshot: null, toast: null
     }),
     resetGame: (state, percept, seed) => set({
-        worldState: state, percept, seed, kbSnapshot: null, isRunning: false
+        worldState: state, percept, seed, kbSnapshot: null, isRunning: false, toast: null
     }),
     stepOnce: (state, percept, kbSnapshot = null) => set((s) => ({
         worldState: state,
@@ -33,5 +36,8 @@ export const useGameStore = create((set, get) => ({
     setSpeed: (speed) => set({ speed }),
     setMultiplayer: (enabled) => set({ multiplayerMode: enabled }),
     setHumanSession: (id) => set({ humanSession: id }),
-    setAiSession: (id) => set({ aiSession: id })
+    setAiSession: (id) => set({ aiSession: id }),
+    showToast: (toast) => set({ toast }),
+    clearToast: () => set({ toast: null }),
 }));
+

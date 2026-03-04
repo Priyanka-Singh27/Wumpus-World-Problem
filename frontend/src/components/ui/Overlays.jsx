@@ -3,6 +3,134 @@ import { useGameStore } from '../../store/gameStore';
 import { previewWorld, newGame } from '../../api/client';
 import GameGrid from '../grid/GameGrid';
 
+/* ── CSS keyframes injected once ────────────────────────────────────────────*/
+const STYLE_ID = 'moment-toast-styles';
+if (!document.getElementById(STYLE_ID)) {
+    const s = document.createElement('style');
+    s.id = STYLE_ID;
+    s.textContent = `
+@keyframes toastSlideIn {
+    0%   { transform: translateX(-50%) translateY(30px) scale(0.7); opacity: 0; }
+    60%  { transform: translateX(-50%) translateY(-6px) scale(1.08); opacity: 1; }
+    100% { transform: translateX(-50%) translateY(0)    scale(1);    opacity: 1; }
+}
+@keyframes toastFadeOut {
+    from { opacity: 1; transform: translateX(-50%) scale(1); }
+    to   { opacity: 0; transform: translateX(-50%) scale(0.9); }
+}
+@keyframes particleBurst {
+    0%   { transform: translate(0,0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+}
+@keyframes confettiFall {
+    0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}`;
+    document.head.appendChild(s);
+}
+
+/*
+ * MomentToast — brief celebration popup for Wumpus kill or Gold grab.
+ * Reads from gameStore.toast; auto-dismisses after 2.2 s.
+ */
+export function MomentToast() {
+    const { toast, clearToast } = useGameStore();
+    const [fading, setFading] = useState(false);
+    const timerRef = useRef(null);
+
+    useEffect(() => {
+        if (!toast) { setFading(false); return; }
+        setFading(false);
+        clearTimeout(timerRef.current);
+        // Begin fade-out 400 ms before clear
+        timerRef.current = setTimeout(() => setFading(true), 1800);
+        const clearTimer = setTimeout(() => clearToast(), 2200);
+        return () => { clearTimeout(timerRef.current); clearTimeout(clearTimer); };
+    }, [toast, clearToast]);
+
+    if (!toast) return null;
+
+    const isKill = toast.type === 'kill';
+    const accentColor = isKill ? '#bb44ff' : '#ffd700';
+    const bgColor = isKill ? 'rgba(30,10,50,0.96)' : 'rgba(40,32,0,0.96)';
+    const glowColor = isKill ? '#aa33ee' : '#e6b800';
+
+    // 12 particles burst outward
+    const particles = Array.from({ length: 12 }, (_, i) => {
+        const angle = (i / 12) * 360;
+        const dist = 55 + (i % 3) * 18;
+        const rad = (angle * Math.PI) / 180;
+        return {
+            id: i,
+            tx: `${Math.cos(rad) * dist}px`,
+            ty: `${Math.sin(rad) * dist}px`,
+            color: [accentColor, '#ffffff', '#ff8844', '#44ffaa', '#ff4488'][i % 5],
+            delay: `${(i * 0.04).toFixed(2)}s`,
+        };
+    });
+
+    return (
+        <div style={{
+            position: 'fixed',
+            bottom: 90,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 1000,
+            animation: fading
+                ? 'toastFadeOut 0.4s ease forwards'
+                : 'toastSlideIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards',
+            pointerEvents: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+        }}>
+            {/* Particle ring */}
+            <div style={{ position: 'absolute', width: 0, height: 0 }}>
+                {particles.map(p => (
+                    <div key={p.id} style={{
+                        position: 'absolute',
+                        width: 8, height: 8,
+                        borderRadius: '50%',
+                        backgroundColor: p.color,
+                        '--tx': p.tx,
+                        '--ty': p.ty,
+                        animation: `particleBurst 0.6s ${p.delay} ease-out forwards`,
+                    }} />
+                ))}
+            </div>
+
+            {/* Toast pill */}
+            <div style={{
+                background: bgColor,
+                border: `3px solid ${accentColor}`,
+                boxShadow: `0 0 20px ${glowColor}, 0 4px 16px rgba(0,0,0,0.6)`,
+                borderRadius: 6,
+                padding: '12px 28px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                minWidth: 240,
+                justifyContent: 'center',
+            }}>
+                <span style={{ fontSize: 32, lineHeight: 1 }}>
+                    {isKill ? '⚔️' : '🏅'}
+                </span>
+                <span style={{
+                    fontFamily: "'Press Start 2P', monospace",
+                    fontSize: 13,
+                    color: accentColor,
+                    textShadow: `2px 2px 0 #000, 0 0 8px ${glowColor}`,
+                    letterSpacing: 1,
+                    whiteSpace: 'nowrap',
+                }}>
+                    {toast.message}
+                </span>
+            </div>
+        </div>
+    );
+}
+
+
 /*
  * GameOverlay — shown in single-player when game result != ONGOING
  * Three states:

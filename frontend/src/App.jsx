@@ -8,7 +8,7 @@ import { newGame } from './api/client';
 import { useGame } from './hooks/useGame';
 import { useAgent } from './hooks/useAgent';
 import { useMetrics } from './hooks/useMetrics';
-import { GameOverlay, SeedBrowser } from './components/ui/Overlays';
+import { GameOverlay, SeedBrowser, MomentToast } from './components/ui/Overlays';
 import MultiplayerLayout from './components/multiplayer/MultiplayerLayout';
 
 function App() {
@@ -68,6 +68,9 @@ function App() {
                     }}
                 />
             )}
+
+            {/* Moment celebration toast — gold grab / wumpus kill */}
+            <MomentToast />
         </div>
     );
 }
