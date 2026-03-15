@@ -51,9 +51,11 @@ export function MomentToast() {
     if (!toast) return null;
 
     const isKill = toast.type === 'kill';
-    const accentColor = isKill ? '#bb44ff' : '#ffd700';
-    const bgColor = isKill ? 'rgba(30,10,50,0.96)' : 'rgba(40,32,0,0.96)';
-    const glowColor = isKill ? '#aa33ee' : '#e6b800';
+    const isTraining = toast.type === 'training';
+    // Use theme-consistent colors from index.css
+    const accentColor = isKill ? '#882299' : (isTraining ? '#2255cc' : '#cc8800');
+    const bgColor = isKill ? 'rgba(50,30,70,0.96)' : (isTraining ? 'rgba(30,45,70,0.96)' : 'rgba(60,50,30,0.96)');
+    const glowColor = isKill ? '#aa44cc' : (isTraining ? '#3388ff' : '#ddaa00');
 
     // 12 particles burst outward
     const particles = Array.from({ length: 12 }, (_, i) => {

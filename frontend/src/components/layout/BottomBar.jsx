@@ -13,7 +13,8 @@ export default function BottomBar({ onReset }) {
         isRunning, toggleAutoRun,
         worldState,
         multiplayerMode, setMultiplayer,
-        speed, setSpeed
+        speed, setSpeed,
+        showToast
     } = useGameStore();
 
     const { startTraining, setTrainingData, setQHeatmap } = useMetricsStore();
@@ -26,9 +27,14 @@ export default function BottomBar({ onReset }) {
         try {
             const res = await trainRL(difficulty, { n_episodes: 100, alpha: 0.2, gamma: 0.95 });
             setTrainingData(res.learning_curve, res.summary);
-            const { direction, has_gold, arrows } = worldState.agent;
+            // Get current agent state for snapshot, with fallbacks
+            const agent = worldState?.agent;
+            const direction = agent?.direction || 'EAST';
+            const has_gold = agent?.has_gold || false;
+            const arrows = agent?.arrows || 1;
             const snap = await getRLSnapshot(direction, has_gold, arrows);
             setQHeatmap(snap.q_heatmap);
+            showToast({ type: 'training', message: '🧠 RL TRAINING COMPLETE!' });
         } catch (e) {
             console.error(e);
             setTrainingData([], null);

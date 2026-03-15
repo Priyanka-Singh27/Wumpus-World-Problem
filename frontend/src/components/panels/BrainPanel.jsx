@@ -140,7 +140,7 @@ function RLBrainView({ qHeatmap, learningCurve, rlSummary, isTraining }) {
         );
     }
 
-    const epsilon = rlSummary ? rlSummary.epsilon : 1.0;
+    const epsilon = rlSummary?.epsilon ?? 1.0;
     // red to green depending on decay
     const rGauge = Math.floor(epsilon * 255);
     const gGauge = Math.floor((1 - epsilon) * 255);
