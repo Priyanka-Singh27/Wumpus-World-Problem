@@ -641,6 +641,11 @@ class RLTrainer:
         has_gold  = world.agent.has_gold
         arrows    = world.agent.arrows
         done      = False
+        
+        # Track visited cells for reward shaping
+        visited_cells = set()
+        prev_pos = (world.agent.row, world.agent.col)
+        visited_cells.add(prev_pos)
 
         # ── Step loop ─────────────────────────────────────────────────────────
         while not done:
@@ -650,25 +655,65 @@ class RLTrainer:
             )
 
             # 2. Execute action in the world → get new percept, reward, done flag
+            old_has_gold = has_gold
             percept, reward, done = world.step(action)
 
             # 3. Update agent snapshot from world's new state
-            pos       = (world.agent.row, world.agent.col)
+            new_pos    = (world.agent.row, world.agent.col)
             direction = world.agent.direction
             has_gold  = world.agent.has_gold
             arrows    = world.agent.arrows
+
+            # ── REWARD SHAPING: Add intermediate rewards to guide learning ──
+            shaped_reward = 0
+            
+            # Reward for finding gold (glitter)
+            if percept.glitter and not old_has_gold:
+                shaped_reward += 20  # Found gold!
+            
+            # Penalty for breeze (potential pit nearby)
+            if percept.breeze:
+                shaped_reward -= 3
+            
+            # Penalty for stench (potential wumpus nearby)
+            if percept.stench:
+                shaped_reward -= 3
+            
+            # Reward for visiting new cell (exploration)
+            if new_pos not in visited_cells:
+                visited_cells.add(new_pos)
+                shaped_reward += 2  # Explore new areas
+            
+            # Reward for getting closer to exit after having gold
+            if has_gold and not old_has_gold:
+                # Now need to return to (0,0)
+                pass  # Will calculate below
+            elif has_gold:
+                # Distance to exit
+                dist_old = abs(prev_pos[0]) + abs(prev_pos[1])
+                dist_new = abs(new_pos[0]) + abs(new_pos[1])
+                if dist_new < dist_old:
+                    shaped_reward += 10  # Getting closer to exit with gold!
+                elif dist_new > dist_old:
+                    shaped_reward -= 5  # Going away from exit
+            
+            # Apply shaped reward (in addition to the base reward from world.step)
+            reward += shaped_reward
 
             # 4. Encode the next state (what situation we're now in after the action)
             #    We call choose_action for its side effect of encoding the state,
             #    but discard the suggested action — the real next action will be
             #    chosen at the top of the next loop iteration.
             next_state_key = self.agent.encode_state(
-                percept, pos, direction, has_gold, arrows
+                percept, new_pos, direction, has_gold, arrows
             )
 
             # 5. Q-update: adjust Q(state, action) based on the reward received
             #    and the estimated future value of the new state.
             self.agent.update(state, action, reward, next_state_key, done)
+            
+            # Update position for next iteration
+            pos = new_pos
 
         # ── Episode complete ──────────────────────────────────────────────────
 

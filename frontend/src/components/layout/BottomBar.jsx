@@ -25,7 +25,7 @@ export default function BottomBar({ onReset }) {
         if (agentType !== 'rl') return;
         startTraining();
         try {
-            const res = await trainRL(difficulty, { n_episodes: 100, alpha: 0.2, gamma: 0.95 });
+            const res = await trainRL(difficulty, { n_episodes: 500, alpha: 0.2, gamma: 0.95 });
             setTrainingData(res.learning_curve, res.summary);
             // Get current agent state for snapshot, with fallbacks
             const agent = worldState?.agent;
@@ -102,7 +102,7 @@ export default function BottomBar({ onReset }) {
                     onClick={() => onReset ? onReset() : null}
                 />
                 <PixelButton
-                    label="⚡ 100 EPS"
+                    label="⚡ 500 EPS"
                     color="amber"
                     onClick={handleTrain}
                     disabled={agentType !== 'rl'}
