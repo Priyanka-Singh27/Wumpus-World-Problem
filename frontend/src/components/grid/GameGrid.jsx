@@ -84,6 +84,7 @@ export default function GameGrid({ overrideState, overrideKb, overrideFog }) {
                                 row={r}
                                 col={c}
                                 isFogged={isCellFogged(r, c)}
+                                fogMode={fogMode}
                                 isCurrent={isCurrent}
                                 agentState={agent}
                                 kbCell={kbCell}

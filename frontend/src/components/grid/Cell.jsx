@@ -4,7 +4,7 @@ import './Cell.css';
 
 const CELL_SIZE = 90; // px
 
-export default function Cell({ cell, row, col, isFogged, isCurrent, agentState, kbCell }) {
+export default function Cell({ cell, row, col, isFogged, fogMode, isCurrent, agentState, kbCell }) {
     // DEBUG: console.log('Rendering cell:', row, col, cell);
     const { has_pit, has_wumpus, has_gold, visited } = cell;
 
@@ -27,8 +27,8 @@ export default function Cell({ cell, row, col, isFogged, isCurrent, agentState, 
     const isStart = (row === 0 && col === 0);
     const isKbSafe = kbCell?.safe && !has_pit && !has_wumpus;
     
-    // When fog is OFF, we show everything that isn't a hazard as safe (grass)
-    const isVisibleSafe = (!isFogged && !has_pit && !has_wumpus);
+    // When fog is OFF, we show everything as safe (grass) since all is visible
+    const isVisibleSafe = (!isFogged && !has_pit && !has_wumpus) || (fogMode === 'off');
     const tileClass = (isStart || isKbSafe || isVisibleSafe) ? 'tile-green' : 'tile-stone';
 
     // KB overlay

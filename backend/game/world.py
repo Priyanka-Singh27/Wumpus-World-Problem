@@ -433,8 +433,6 @@ class WumpusWorld:
                     "breeze":     bool(cell_breeze),
                     "stench":     bool(cell_stench),
                 }
-                if cell.has_pit or cell.has_wumpus or cell.has_gold:
-                    print(f"[REVEAL] Entity at ({r},{c}): Pit={cell.has_pit}, Wumpus={cell.has_wumpus}, Gold={cell.has_gold}")
                 row.append(cell_data)
             cells.append(row)
 

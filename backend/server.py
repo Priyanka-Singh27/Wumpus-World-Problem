@@ -209,11 +209,18 @@ class WumpusHandler(BaseHTTPRequestHandler):
         world   = WumpusWorld(cfg)
         session = new_session(world)
         percept = world._last_percept
+        state   = world.to_dict(reveal=True)
+        for r in range(world.size):
+            for c in range(world.size):
+                real = world.grid[r][c]
+                state['cells'][r][c]['has_pit'] = bool(real.has_pit)
+                state['cells'][r][c]['has_wumpus'] = bool(real.has_wumpus)
+                state['cells'][r][c]['has_gold'] = bool(real.has_gold)
 
         self._send(200, {
             "session_id": session.id,
             "percept":    percept.to_dict(),
-            "state":      world.to_dict(reveal=False),
+            "state":      state,
             "message":    "New game created",
         })
 
@@ -245,13 +252,22 @@ class WumpusHandler(BaseHTTPRequestHandler):
             return self._send(400, {"error": "Game is over. Call /api/game/reset"})
 
         percept, reward, done = session.world.step(action)
+        state = session.world.to_dict(reveal=True)
+        
+        # Raw hazard injection for UI reveal
+        for r in range(session.world.size):
+            for c in range(session.world.size):
+                real = session.world.grid[r][c]
+                state['cells'][r][c]['has_pit'] = bool(real.has_pit)
+                state['cells'][r][c]['has_wumpus'] = bool(real.has_wumpus)
+                state['cells'][r][c]['has_gold'] = bool(real.has_gold)
 
         self._send(200, {
             "percept": percept.to_dict(),
             "reward":  reward,
             "done":    done,
             "result":  session.world.result.value,
-            "state":   session.world.to_dict(reveal=done),
+            "state":   state,
         })
 
     def _game_state(self, params: dict):
@@ -280,10 +296,17 @@ class WumpusHandler(BaseHTTPRequestHandler):
 
         percept = session.world.reset()
         session.kb_agent.reset()
+        state = session.world.to_dict(reveal=True)
+        for r in range(session.world.size):
+            for c in range(session.world.size):
+                real = session.world.grid[r][c]
+                state['cells'][r][c]['has_pit'] = bool(real.has_pit)
+                state['cells'][r][c]['has_wumpus'] = bool(real.has_wumpus)
+                state['cells'][r][c]['has_gold'] = bool(real.has_gold)
 
         self._send(200, {
             "percept": percept.to_dict(),
-            "state":   session.world.to_dict(reveal=False),
+            "state":   state,
             "message": "Game reset",
         })
 
@@ -553,12 +576,6 @@ class WumpusHandler(BaseHTTPRequestHandler):
     # ── Helpers ───────────────────────────────────────────────────────────────
 
     def _send(self, status: int, data: dict):
-        # DEBUG: Check if hazards are in the state being sent
-        if isinstance(data, dict) and "state" in data:
-            cells = data["state"].get("cells", [])
-            has_any = any(c.get("has_pit") or c.get("has_wumpus") or c.get("has_gold") for row in cells for c in row)
-            print(f"[API DEBUG] Sending state. Hazards found: {has_any}")
-            
         body = json.dumps(data, default=str).encode()
         self.send_response(status)
         self._cors_headers()
