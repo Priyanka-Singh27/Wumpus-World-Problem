@@ -25,13 +25,29 @@ if (!document.getElementById(STYLE_ID)) {
 @keyframes confettiFall {
     0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
     100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+@keyframes chestBounce {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    25%      { transform: scale(1.15) rotate(-5deg); }
+    50%      { transform: scale(1.2) rotate(5deg); }
+    75%      { transform: scale(1.1) rotate(-3deg); }
+}
+@keyframes skullShake {
+    0%, 100% { transform: rotate(0deg); }
+    20%      { transform: rotate(-8deg); }
+    40%      { transform: rotate(8deg); }
+    60%      { transform: rotate(-5deg); }
+    80%      { transform: rotate(5deg); }
+}
+@keyframes letterReveal {
+    from { opacity: 0; transform: translateY(-20px) scale(0.5); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
 }`;
     document.head.appendChild(s);
 }
 
 /*
  * MomentToast — brief celebration popup for Wumpus kill or Gold grab.
- * Reads from gameStore.toast; auto-dismisses after 2.2 s.
  */
 export function MomentToast() {
     const { toast, clearToast } = useGameStore();
@@ -42,7 +58,6 @@ export function MomentToast() {
         if (!toast) { setFading(false); return; }
         setFading(false);
         clearTimeout(timerRef.current);
-        // Begin fade-out 400 ms before clear
         timerRef.current = setTimeout(() => setFading(true), 1800);
         const clearTimer = setTimeout(() => clearToast(), 2200);
         return () => { clearTimeout(timerRef.current); clearTimeout(clearTimer); };
@@ -52,12 +67,12 @@ export function MomentToast() {
 
     const isKill = toast.type === 'kill';
     const isTraining = toast.type === 'training';
-    // Use theme-consistent colors from index.css
-    const accentColor = isKill ? '#882299' : (isTraining ? '#2255cc' : '#cc8800');
-    const bgColor = isKill ? 'rgba(50,30,70,0.96)' : (isTraining ? 'rgba(30,45,70,0.96)' : 'rgba(60,50,30,0.96)');
-    const glowColor = isKill ? '#aa44cc' : (isTraining ? '#3388ff' : '#ddaa00');
+    const accentColor = isKill ? '#aa44cc' : (isTraining ? '#4488ff' : '#ffd700');
+    const bgColor = isKill
+        ? 'rgba(30,10,40,0.95)'
+        : (isTraining ? 'rgba(10,20,40,0.95)' : 'rgba(40,30,10,0.95)');
+    const glowColor = isKill ? '#cc66ff' : (isTraining ? '#66aaff' : '#ffaa00');
 
-    // 12 particles burst outward
     const particles = Array.from({ length: 12 }, (_, i) => {
         const angle = (i / 12) * 360;
         const dist = 55 + (i % 3) * 18;
@@ -105,8 +120,7 @@ export function MomentToast() {
             <div style={{
                 background: bgColor,
                 border: `3px solid ${accentColor}`,
-                boxShadow: `0 0 20px ${glowColor}, 0 4px 16px rgba(0,0,0,0.6)`,
-                borderRadius: 6,
+                boxShadow: `0 0 20px ${glowColor}, 6px 6px 0 rgba(0,0,0,0.5)`,
                 padding: '12px 28px',
                 display: 'flex',
                 alignItems: 'center',
@@ -115,11 +129,11 @@ export function MomentToast() {
                 justifyContent: 'center',
             }}>
                 <span style={{ fontSize: 32, lineHeight: 1 }}>
-                    {isKill ? '⚔️' : '🏅'}
+                    {isKill ? '⚔️' : (isTraining ? '🧠' : '🏅')}
                 </span>
                 <span style={{
                     fontFamily: "'Press Start 2P', monospace",
-                    fontSize: 13,
+                    fontSize: 11,
                     color: accentColor,
                     textShadow: `2px 2px 0 #000, 0 0 8px ${glowColor}`,
                     letterSpacing: 1,
@@ -134,11 +148,7 @@ export function MomentToast() {
 
 
 /*
- * GameOverlay — shown in single-player when game result != ONGOING
- * Three states:
- *   WIN  → gold chest animation + green text
- *   DEAD_PIT / DEAD_WUMPUS → skull + red text
- *   TIMEOUT → yellow text
+ * GameOverlay — pixel-art styled Game Over / You Win screen
  */
 export function GameOverlay({ onReset }) {
     const { worldState } = useGameStore();
@@ -149,30 +159,37 @@ export function GameOverlay({ onReset }) {
 
     const isWin = result === 'WIN';
     const isDead = result === 'DEAD_PIT' || result === 'DEAD_WUMPUS';
-    const isTimeout = result === 'TIMEOUT';
 
     const emoji = isWin ? '🏆' : isDead ? '💀' : '⏱';
-    const title = isWin ? 'YOU WIN!' : isDead ? 'YOU DIED' : 'TIME OUT';
+    const title = isWin ? 'YOU WIN!' : isDead ? 'GAME OVER' : 'TIME OUT';
     const sub = isWin
-        ? `Score: ${score >= 0 ? '+' : ''}${score}`
+        ? `SCORE: ${score >= 0 ? '+' : ''}${score}`
         : result === 'DEAD_PIT'
-            ? 'Fell into a pit!'
+            ? 'FELL INTO A PIT!'
             : result === 'DEAD_WUMPUS'
-                ? 'Eaten by the Wumpus!'
-                : `Max steps reached. Score: ${score}`;
-    const color = isWin ? '#22aa55' : isDead ? '#cc2222' : '#cc8800';
-    const bgColor = isWin ? 'rgba(20,60,30,0.93)' : isDead ? 'rgba(60,10,10,0.93)' : 'rgba(40,35,10,0.93)';
+                ? 'EATEN BY THE WUMPUS!'
+                : `MAX STEPS. SCORE: ${score}`;
+    const color = isWin ? '#22ff66' : isDead ? '#ff4444' : '#ffaa00';
+    const bgColor = isWin
+        ? 'rgba(10,30,15,0.95)'
+        : isDead
+            ? 'rgba(40,5,5,0.95)'
+            : 'rgba(30,25,5,0.95)';
 
-    // Confetti pieces for win
+    // Confetti for win
     const confetti = isWin
-        ? Array.from({ length: 24 }, (_, i) => ({
+        ? Array.from({ length: 30 }, (_, i) => ({
             id: i,
-            left: `${(i * 4.2) % 100}%`,
-            color: ['#ffd700', '#ff4466', '#00ff88', '#4488ff', '#ff8844'][i % 5],
-            delay: `${(i * 0.12).toFixed(2)}s`,
+            left: `${(i * 3.4) % 100}%`,
+            color: ['#ffd700', '#ff4466', '#00ff88', '#4488ff', '#ff8844', '#aa44cc'][i % 6],
+            delay: `${(i * 0.1).toFixed(2)}s`,
             duration: `${1.4 + (i % 4) * 0.3}s`,
+            size: 6 + (i % 3) * 4,
         }))
         : [];
+
+    // Title letters animation
+    const titleLetters = title.split('');
 
     return (
         <div style={{
@@ -180,67 +197,104 @@ export function GameOverlay({ onReset }) {
             background: bgColor,
             display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center',
-            gap: 16,
+            gap: 20,
             overflow: 'hidden',
         }}>
             {/* Confetti */}
             {confetti.map(c => (
                 <div key={c.id} style={{
                     position: 'absolute',
-                    width: 10, height: 10,
+                    width: c.size, height: c.size,
                     backgroundColor: c.color,
                     left: c.left, top: '-5%',
                     animation: `confettiFall ${c.duration} ${c.delay} linear forwards`,
                 }} />
             ))}
 
-            <div style={{ fontSize: 64, lineHeight: 1 }}>{emoji}</div>
+            {/* Emoji icon with animation */}
+            <div style={{
+                fontSize: 72, lineHeight: 1,
+                animation: isWin
+                    ? 'chestBounce 1s ease-in-out infinite'
+                    : (isDead ? 'skullShake 0.5s ease-in-out infinite' : 'none'),
+                filter: `drop-shadow(0 0 20px ${color})`,
+            }}>{emoji}</div>
 
+            {/* Pixel-art title with letter-by-letter animation */}
             <h1 style={{
                 fontFamily: "'Press Start 2P', monospace",
-                fontSize: 32,
+                fontSize: 28,
                 color,
-                textShadow: '4px 4px 0 #000',
                 margin: 0,
                 textTransform: 'uppercase',
+                display: 'flex',
+                gap: 2,
             }}>
-                {title}
+                {titleLetters.map((letter, i) => (
+                    <span key={i} style={{
+                        display: 'inline-block',
+                        animation: `letterReveal 0.3s ${i * 0.06}s ease-out both`,
+                        textShadow: `3px 3px 0 #000, 0 0 15px ${color}`,
+                    }}>
+                        {letter === ' ' ? '\u00A0' : letter}
+                    </span>
+                ))}
             </h1>
 
+            {/* Sub text */}
             <p style={{
-                fontFamily: 'sans-serif',
-                fontSize: 18,
-                color: '#ffffff',
+                fontFamily: "'Press Start 2P', monospace",
+                fontSize: 10,
+                color: '#fff',
                 margin: 0,
                 textAlign: 'center',
+                textShadow: '2px 2px 0 #000',
+                opacity: 0.8,
             }}>
                 {sub}
             </p>
 
-            <button
-                onClick={onReset}
-                style={{
-                    marginTop: 16,
-                    padding: '12px 32px',
-                    fontFamily: "'Press Start 2P', monospace",
-                    fontSize: 12,
-                    textTransform: 'uppercase',
-                    background: color,
-                    color: '#fff',
-                    border: '3px solid #fff',
-                    cursor: 'pointer',
-                    boxShadow: '4px 4px 0 #000',
-                    letterSpacing: 1,
-                }}
-            >
-                ↺ PLAY AGAIN
-            </button>
+            {/* Retry buttons */}
+            <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
+                <button
+                    onClick={onReset}
+                    style={{
+                        padding: '14px 36px',
+                        fontFamily: "'Press Start 2P', monospace",
+                        fontSize: 11,
+                        textTransform: 'uppercase',
+                        background: '#2ca52c',
+                        color: '#fff',
+                        border: 'none',
+                        cursor: 'pointer',
+                        letterSpacing: 1,
+                        boxShadow:
+                            '0 4px 0 0 #1a6a1a, 4px 0 0 0 #1a6a1a,' +
+                            'inset 0 2px 0 0 rgba(255,255,255,0.3)',
+                        transition: 'transform 0.05s',
+                    }}
+                    onMouseDown={e => {
+                        e.currentTarget.style.transform = 'translateY(3px)';
+                        e.currentTarget.style.boxShadow = '0 1px 0 0 #1a6a1a, inset 0 2px 0 0 rgba(0,0,0,0.2)';
+                    }}
+                    onMouseUp={e => {
+                        e.currentTarget.style.transform = '';
+                        e.currentTarget.style.boxShadow = '0 4px 0 0 #1a6a1a, 4px 0 0 0 #1a6a1a, inset 0 2px 0 0 rgba(255,255,255,0.3)';
+                    }}
+                    onMouseLeave={e => {
+                        e.currentTarget.style.transform = '';
+                        e.currentTarget.style.boxShadow = '0 4px 0 0 #1a6a1a, 4px 0 0 0 #1a6a1a, inset 0 2px 0 0 rgba(255,255,255,0.3)';
+                    }}
+                >
+                    ▶ TRY AGAIN?
+                </button>
+            </div>
         </div>
     );
 }
 
 /*
- * SeedBrowser — modal for previewing and loading specific world seeds
+ * SeedBrowser — pixel-art modal for previewing and loading specific world seeds
  */
 export function SeedBrowser({ onClose, onLoad }) {
     const [seedInput, setSeedInput] = useState('');
@@ -270,50 +324,55 @@ export function SeedBrowser({ onClose, onLoad }) {
     };
 
     const DIFFS = ['easy', 'medium', 'hard', 'expert'];
+    const DIFF_EMOJI = { easy: '🟢', medium: '🟡', hard: '🔴', expert: '💀' };
 
     return (
         <div style={{
             position: 'fixed', inset: 0, zIndex: 500,
-            background: 'rgba(0,0,0,0.65)',
+            background: 'rgba(0,0,0,0.75)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
         }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
             <div style={{
-                background: '#f0f0f0',
-                border: '4px solid #4a7aaa',
+                background: '#1e1529',
+                border: '4px solid #5a4a6a',
                 width: 640,
                 maxHeight: '90vh',
                 display: 'flex', flexDirection: 'column',
-                boxShadow: '8px 8px 0 rgba(0,0,0,0.5)',
+                boxShadow: '8px 8px 0 rgba(0,0,0,0.6)',
             }}>
                 {/* Header */}
                 <div style={{
-                    background: '#4a7aaa', color: '#fff',
+                    background: '#2c2137',
+                    color: '#ffd700',
                     padding: '12px 16px',
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    fontFamily: "'Press Start 2P', monospace", fontSize: 11, textTransform: 'uppercase',
+                    fontFamily: "'Press Start 2P', monospace", fontSize: 10, textTransform: 'uppercase',
+                    borderBottom: '3px solid #5a4a6a',
                 }}>
                     <span>🌍 Seed Browser</span>
                     <button onClick={onClose} style={{
-                        background: 'none', border: 'none', color: '#fff',
-                        fontSize: 18, cursor: 'pointer', lineHeight: 1,
+                        background: 'none', border: 'none', color: '#ff4466',
+                        fontSize: 16, cursor: 'pointer', lineHeight: 1,
+                        fontFamily: "'Press Start 2P', monospace",
                     }}>✕</button>
                 </div>
 
                 {/* Controls */}
                 <div style={{
-                    padding: '12px 16px', borderBottom: '2px solid #bbb',
+                    padding: '12px 16px', borderBottom: '2px solid #3a2d4a',
                     display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap',
                 }}>
                     <input
                         ref={inputRef}
                         type="number"
-                        placeholder="Seed (blank = random)"
+                        placeholder="Seed..."
                         value={seedInput}
                         onChange={e => setSeedInput(e.target.value)}
                         style={{
-                            padding: '6px 10px', border: '2px solid #999',
-                            fontFamily: 'sans-serif', fontSize: 13,
-                            flex: 1, minWidth: 140,
+                            padding: '6px 10px', border: '2px solid #5a4a6a',
+                            fontFamily: "'Press Start 2P', monospace", fontSize: 8,
+                            flex: 1, minWidth: 100,
+                            background: '#0a0a14', color: '#ffd700',
                         }}
                     />
                     {DIFFS.map(d => (
@@ -321,26 +380,28 @@ export function SeedBrowser({ onClose, onLoad }) {
                             onClick={() => setDiff(d)}
                             style={{
                                 padding: '6px 10px',
-                                background: diff === d ? '#4a7aaa' : '#ddd',
-                                color: diff === d ? '#fff' : '#333',
-                                border: '2px solid #999',
+                                background: diff === d ? '#5a4a6a' : '#2c2137',
+                                color: diff === d ? '#ffd700' : '#887799',
+                                border: `2px solid ${diff === d ? '#ffd700' : '#5a4a6a'}`,
                                 fontFamily: "'Press Start 2P', monospace",
-                                fontSize: 7, textTransform: 'uppercase',
+                                fontSize: 6, textTransform: 'uppercase',
                                 cursor: 'pointer',
+                                boxShadow: diff === d ? '0 0 8px rgba(255,215,0,0.3)' : 'none',
                             }}
-                        >{d}</button>
+                        >{DIFF_EMOJI[d]} {d}</button>
                     ))}
                     <button
                         onClick={handlePreview}
                         disabled={loading}
                         style={{
                             padding: '7px 16px',
-                            background: '#3a7d44', color: '#fff',
-                            border: '2px solid #2a5a30',
+                            background: '#2ca52c', color: '#fff',
+                            border: 'none',
                             fontFamily: "'Press Start 2P', monospace",
-                            fontSize: 8, cursor: 'pointer',
+                            fontSize: 7, cursor: 'pointer',
+                            boxShadow: '0 3px 0 0 #1a6a1a',
                         }}
-                    >{loading ? '...' : 'PREVIEW'}</button>
+                    >{loading ? '...' : '👁 PREVIEW'}</button>
                 </div>
 
                 {/* Preview area */}
@@ -350,20 +411,32 @@ export function SeedBrowser({ onClose, onLoad }) {
                     alignItems: 'center', padding: 16, gap: 12,
                 }}>
                     {!preview && !loading && (
-                        <div style={{ color: '#888', fontFamily: 'sans-serif', fontSize: 14, marginTop: 40 }}>
-                            Enter a seed and click PREVIEW to see the world layout.
+                        <div style={{
+                            color: '#887799',
+                            fontFamily: "'Press Start 2P', monospace",
+                            fontSize: 8, marginTop: 40,
+                            textAlign: 'center', lineHeight: 2,
+                        }}>
+                            Enter a seed and click PREVIEW<br/>to see the world layout.
                         </div>
                     )}
                     {loading && (
-                        <div style={{ color: '#4a7aaa', fontFamily: 'sans-serif', fontSize: 16, marginTop: 40 }}>
-                            Generating world…
+                        <div style={{ marginTop: 40, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                            <div className="sprite-pit-swirl" style={{ color: '#ffd700' }} />
+                            <div style={{
+                                color: '#ffd700',
+                                fontFamily: "'Press Start 2P', monospace",
+                                fontSize: 8,
+                            }}>
+                                Generating world…
+                            </div>
                         </div>
                     )}
                     {preview && !loading && (
                         <>
                             <div style={{
-                                fontFamily: "'Press Start 2P', monospace", fontSize: 9,
-                                color: '#333', letterSpacing: 1,
+                                fontFamily: "'Press Start 2P', monospace", fontSize: 7,
+                                color: '#ffd700', letterSpacing: 1,
                             }}>
                                 SEED: {preview.seed} &nbsp;|&nbsp; SIZE: {preview.world.size}×{preview.world.size}
                                 &nbsp;|&nbsp; PITS: {preview.world.cells.flat().filter(c => c.has_pit).length}
@@ -371,20 +444,23 @@ export function SeedBrowser({ onClose, onLoad }) {
                                 &nbsp;|&nbsp; GOLD: {preview.world.cells.flat().filter(c => c.has_gold).length}
                             </div>
 
-                            {/* Mini revealed grid */}
                             <SeedPreviewGrid world={preview.world} />
 
                             <button
                                 onClick={handleLoad}
                                 style={{
                                     padding: '10px 28px',
-                                    background: '#4a7aaa', color: '#fff',
-                                    border: '3px solid #2a5a88',
+                                    background: '#2ca52c', color: '#fff',
+                                    border: 'none',
                                     fontFamily: "'Press Start 2P', monospace",
-                                    fontSize: 10, cursor: 'pointer',
-                                    boxShadow: '3px 3px 0 #000',
+                                    fontSize: 9, cursor: 'pointer',
+                                    boxShadow: '0 4px 0 0 #1a6a1a, 4px 0 0 0 rgba(0,0,0,0.3)',
                                     textTransform: 'uppercase',
+                                    transition: 'transform 0.05s',
                                 }}
+                                onMouseDown={e => e.currentTarget.style.transform = 'translateY(3px)'}
+                                onMouseUp={e => e.currentTarget.style.transform = ''}
+                                onMouseLeave={e => e.currentTarget.style.transform = ''}
                             >
                                 ▶ PLAY THIS WORLD
                             </button>
@@ -405,30 +481,41 @@ function SeedPreviewGrid({ world }) {
             gridTemplateColumns: `repeat(${size}, ${cellPx}px)`,
             gridTemplateRows: `repeat(${size}, ${cellPx}px)`,
             gap: 2,
-            padding: 2,
-            background: '#4a5545',
-            border: '3px solid #2a3025',
+            padding: 3,
+            background: '#3a2a1a',
+            border: '3px solid #2a1a0a',
+            boxShadow: '4px 4px 0 rgba(0,0,0,0.4)',
         }}>
             {[...cells].reverse().map((rowArr, revR) => {
                 const r = size - 1 - revR;
                 return rowArr.map((cell, c) => {
                     const isStart = r === 0 && c === 0;
-                    let bg = isStart ? '#5a8a3a' : '#7a8875';
+                    /* Grass-top with dirt/stone */
+                    let bg = isStart
+                        ? 'linear-gradient(180deg, #5dba3c 0%, #5dba3c 30%, #8b6914 30%)'
+                        : 'linear-gradient(180deg, #5dba3c 0%, #5dba3c 30%, #7a7a7a 30%)';
                     let content = null;
-                    const fs = Math.max(10, cellPx / 3);
+                    const fs = Math.max(10, cellPx / 2.5);
 
-                    if (cell.has_pit) { bg = '#1a1a1a'; content = <span style={{ fontSize: fs }}>🕳</span>; }
-                    if (cell.has_wumpus) { content = <span style={{ fontSize: fs }}>💀</span>; }
-                    if (cell.has_gold) { content = <span style={{ fontSize: fs }}>🟡</span>; }
+                    if (cell.has_pit) {
+                        bg = 'radial-gradient(circle, #000 40%, #1a0a0a 80%)';
+                        content = <span style={{ fontSize: fs }}>🕳️</span>;
+                    }
+                    if (cell.has_wumpus) {
+                        content = <span style={{ fontSize: fs, filter: 'drop-shadow(0 0 4px red)' }}>👾</span>;
+                    }
+                    if (cell.has_gold) {
+                        content = <span style={{ fontSize: fs, filter: 'drop-shadow(0 0 4px gold)' }}>🪙</span>;
+                    }
                     if (isStart && !cell.has_pit && !cell.has_wumpus) {
-                        content = <span style={{ fontSize: fs }}>🧍</span>;
+                        content = <span style={{ fontSize: fs }}>🧝</span>;
                     }
 
                     return (
                         <div key={`${r}-${c}`} style={{
                             width: cellPx, height: cellPx, background: bg,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            boxShadow: 'inset 2px 2px 0 rgba(255,255,255,0.2), inset -2px -2px 0 rgba(0,0,0,0.2)',
+                            boxShadow: 'inset 2px 2px 0 rgba(255,255,255,0.15), inset -2px -2px 0 rgba(0,0,0,0.25)',
                             flexShrink: 0,
                         }}>
                             {content}

@@ -412,31 +412,30 @@ class WumpusWorld:
     def to_dict(self, reveal: bool = False) -> dict:
         """
         Serialise world state.
-
-        All cell data (pits, wumpus, gold, percepts) is always included.
-        Fog of war is handled purely by the frontend display layer.
-        The 'reveal' parameter is kept for API compatibility but no longer
-        affects the serialised output.
+        FORCE REVEAL: All data is sent; frontend handles fogging.
         """
         cells = []
         for r in range(self.size):
             row = []
             for c in range(self.size):
                 cell = self.grid[r][c]
-                # Compute static percepts (breeze/stench) for this cell
                 nbrs = self._neighbours(r, c)
                 cell_breeze = any(self.grid[nr][nc].has_pit    for nr, nc in nbrs)
                 cell_stench = any(self.grid[nr][nc].has_wumpus for nr, nc in nbrs)
-                row.append({
+                
+                cell_data = {
                     "row":        r,
                     "col":        c,
                     "visited":    cell.visited,
-                    "has_pit":    cell.has_pit,
-                    "has_wumpus": cell.has_wumpus,
-                    "has_gold":   cell.has_gold,
-                    "breeze":     cell_breeze,
-                    "stench":     cell_stench,
-                })
+                    "has_pit":    bool(cell.has_pit),
+                    "has_wumpus": bool(cell.has_wumpus),
+                    "has_gold":   bool(cell.has_gold),
+                    "breeze":     bool(cell_breeze),
+                    "stench":     bool(cell_stench),
+                }
+                if cell.has_pit or cell.has_wumpus or cell.has_gold:
+                    print(f"[REVEAL] Entity at ({r},{c}): Pit={cell.has_pit}, Wumpus={cell.has_wumpus}, Gold={cell.has_gold}")
+                row.append(cell_data)
             cells.append(row)
 
         return {

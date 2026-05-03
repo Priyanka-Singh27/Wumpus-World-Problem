@@ -6,16 +6,26 @@ export default function VSBadge() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: '48px',
+            width: '60px',
             color: 'var(--gold)',
-            textShadow: '2px 2px 0 #0f0, -1px -1px 0 #000, 1px -1px 0 #f00, -2px 2px 0 #000, 2px 2px 0 #000',
-            fontSize: '24px',
+            textShadow: '4px 4px 0 #000, 0 0 10px rgba(255,215,0,0.4)',
+            fontSize: '28px',
             zIndex: 10,
-            background: 'var(--bg)',
-            borderLeft: '2px solid var(--border)',
-            borderRight: '2px solid var(--border)'
+            background: 'var(--hud-bg)',
+            borderLeft: '4px solid var(--border-pixel)',
+            borderRight: '4px solid var(--border-pixel)',
+            fontFamily: "'Press Start 2P', monospace",
+            position: 'relative',
+            boxShadow: '0 0 15px rgba(0,0,0,0.5)'
         }}>
-            VS
+            {/* Corner pixel dots */}
+            <div style={{ position: 'absolute', top: 6, left: 6, width: 4, height: 4, background: '#fff', opacity: 0.2 }} />
+            <div style={{ position: 'absolute', top: 6, right: 6, width: 4, height: 4, background: '#fff', opacity: 0.2 }} />
+            <div style={{ position: 'absolute', bottom: 6, left: 6, width: 4, height: 4, background: '#fff', opacity: 0.2 }} />
+            <div style={{ position: 'absolute', bottom: 6, right: 6, width: 4, height: 4, background: '#fff', opacity: 0.2 }} />
+            
+            <span style={{ transform: 'rotate(-5deg)' }}>V</span>
+            <span style={{ transform: 'rotate(5deg)', marginLeft: -4 }}>S</span>
         </div>
     );
 }

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React from 'react';
 import Cell from './Cell.jsx';
 import { useGameStore } from '../../store/gameStore';
 
@@ -16,7 +16,12 @@ export default function GameGrid({ overrideState, overrideKb, overrideFog }) {
     if (!worldState) {
         return (
             <div className="game-grid-outer">
-                <div style={{ color: '#555', fontFamily: 'sans-serif', fontSize: 18 }}>
+                <div style={{
+                    color: '#2c2137',
+                    fontFamily: "'Press Start 2P', monospace",
+                    fontSize: 12,
+                    textShadow: '2px 2px 0 rgba(255,255,255,0.5)',
+                }}>
                     Loading world…
                 </div>
             </div>
@@ -42,7 +47,7 @@ export default function GameGrid({ overrideState, overrideKb, overrideFog }) {
         return false;
     };
 
-    const gridPx = gridSize * CELL_SIZE + (gridSize + 1) * 2; // cells + grout gaps
+    const gridPx = gridSize * CELL_SIZE + (gridSize + 1) * 2;
 
     return (
         <div className="game-grid-outer">
@@ -53,11 +58,18 @@ export default function GameGrid({ overrideState, overrideKb, overrideFog }) {
                     gridTemplateColumns: `repeat(${gridSize}, ${CELL_SIZE}px)`,
                     gridTemplateRows: `repeat(${gridSize}, ${CELL_SIZE}px)`,
                     gap: '2px',
-                    padding: '2px',
-                    backgroundColor: '#4a5545', /* grout colour */
-                    border: '4px solid #2a3025',
-                    width: gridPx,
-                    height: gridPx,
+                    padding: '4px',
+                    /* Ground / underground border */
+                    backgroundColor: '#3a2a1a',
+                    border: '4px solid #2a1a0a',
+                    width: gridPx + 4,
+                    height: gridPx + 4,
+                    /* Chunky pixel shadow */
+                    boxShadow:
+                        '6px 6px 0 0 rgba(0,0,0,0.4),' +
+                        'inset 3px 3px 0 0 rgba(255,255,255,0.08),' +
+                        'inset -3px -3px 0 0 rgba(0,0,0,0.3)',
+                    imageRendering: 'pixelated',
                 }}
             >
                 {(cells || []).slice().reverse().map((rowArr, revR) => {

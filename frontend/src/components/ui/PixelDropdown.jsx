@@ -16,8 +16,8 @@ export default function PixelDropdown({ options, selected, onChange, label }) {
 
     return (
         <div className="pixel-dropdown" ref={ref}>
-            <div className="dropdown-trigger" onClick={() => setOpen(!open)}>
-                {label}: {selectedOption?.label} ▾
+            <div className={`dropdown-trigger ${open ? 'active' : ''}`} onClick={() => setOpen(!open)}>
+                {label}: {selectedOption?.label} <span style={{ fontSize: 8 }}>{open ? '▲' : '▼'}</span>
             </div>
             {open && (
                 <div className="dropdown-list">

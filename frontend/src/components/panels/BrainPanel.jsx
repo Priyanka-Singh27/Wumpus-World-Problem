@@ -10,8 +10,17 @@ export default function BrainPanel() {
 
     if (agentType === 'human' || agentType === 'random') {
         return (
-            <div style={{ padding: '16px', color: 'var(--dim)', textAlign: 'center' }}>
-                <h3>NO BRAIN ACTIVITY</h3>
+            <div style={{
+                padding: '24px',
+                color: '#887799',
+                textAlign: 'center',
+                fontFamily: "'Press Start 2P', monospace",
+                fontSize: 10,
+                lineHeight: 2,
+            }}>
+                <div style={{ fontSize: 36, marginBottom: 16 }}>🧠</div>
+                NO BRAIN ACTIVITY<br/>
+                <span style={{ fontSize: 8, color: '#554466' }}>SELECT KB OR RL AGENT</span>
             </div>
         );
     }
@@ -56,16 +65,36 @@ function KBBrainView({ kbSnapshot }) {
         }
     }, [kbSnapshot?.inference_log]);
 
-    if (!kbSnapshot) return <div style={{ color: 'var(--gold)' }}>WAITING FOR KB SNAPSHOT...</div>;
+    if (!kbSnapshot) return (
+        <div style={{
+            color: '#ffd700',
+            fontFamily: "'Press Start 2P', monospace",
+            fontSize: 8,
+            textAlign: 'center',
+            marginTop: 20,
+        }}>
+            <div style={{ fontSize: 24, marginBottom: 8 }}>⏳</div>
+            WAITING FOR KB DATA...
+        </div>
+    );
 
     const { cells, wumpus_loc, plan_length } = kbSnapshot;
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             <div style={{ marginBottom: '8px', flexShrink: 0 }}>
-                <h3 style={{ color: '#996600', fontSize: '8px', margin: '0 0 8px 0', fontFamily: "'Press Start 2P', monospace", textTransform: 'uppercase' }}>KB INFERENCE STATE</h3>
-                {wumpus_loc && <div style={{ color: '#c62828', fontSize: '11px', fontFamily: 'sans-serif' }}>🎯 Wumpus located: [{wumpus_loc.toString()}]</div>}
-                <div style={{ color: '#0077aa', fontSize: '11px', fontFamily: 'sans-serif' }}>Plan queue depth: {plan_length}</div>
+                <h3 style={{
+                    color: '#ffd700', fontSize: '11px', margin: '0 0 8px 0',
+                    fontFamily: "'Press Start 2P', monospace", textTransform: 'uppercase',
+                }}>🧠 KB INFERENCE</h3>
+                {wumpus_loc && (
+                    <div style={{ color: '#ff4466', fontSize: '9px', fontFamily: "'Press Start 2P', monospace" }}>
+                        🎯 WUMPUS: [{wumpus_loc.toString()}]
+                    </div>
+                )}
+                <div style={{ color: '#4488ff', fontSize: '9px', fontFamily: "'Press Start 2P', monospace" }}>
+                    📋 PLAN: {plan_length}
+                </div>
             </div>
 
             <div style={{ alignSelf: 'center', marginBottom: '8px', flexShrink: 0 }}>
@@ -89,26 +118,27 @@ function MiniGrid({ cells, wumpusLoc }) {
             display: 'grid',
             gridTemplateColumns: `repeat(${size}, ${cellSize}px)`,
             gridTemplateRows: `repeat(${size}, ${cellSize}px)`,
-            border: '2px solid #aaa',
-            backgroundColor: '#ccc',
+            border: '2px solid #5a4a6a',
+            backgroundColor: '#0a0a14',
             gap: 1, padding: 1,
+            boxShadow: '3px 3px 0 rgba(0,0,0,0.4)',
         }}>
             {[...cells].reverse().map((rowArr, revR) => {
                 const r = size - 1 - revR;
                 return rowArr.map((cell, c) => {
-                    let bg = '#d0d0d0';
+                    let bg = '#1a1a2e';
                     let borderColor = 'transparent';
-                    if (cell.safe) bg = '#b8dfb8';
-                    else if (cell.danger_prob > 0.6) bg = '#f4adad';
-                    else if (cell.danger_prob > 0.2) bg = '#fdd8a0';
+                    if (cell.safe) bg = '#1a3a1a';
+                    else if (cell.danger_prob > 0.6) bg = '#3a1a1a';
+                    else if (cell.danger_prob > 0.2) bg = '#3a2a1a';
 
                     const isWumpus = wumpusLoc && wumpusLoc[0] === r && wumpusLoc[1] === c;
-                    if (isWumpus) { borderColor = '#c62828'; bg = '#f4adad'; }
+                    if (isWumpus) { borderColor = '#ff4466'; bg = '#3a1a1a'; }
 
-                    let color = '#222';
-                    if (cell.danger_prob < 0.2) color = '#2a7a2a';
-                    else if (cell.danger_prob <= 0.6) color = '#994400';
-                    else color = '#c62828';
+                    let color = '#887799';
+                    if (cell.danger_prob < 0.2) color = '#22cc66';
+                    else if (cell.danger_prob <= 0.6) color = '#ffaa44';
+                    else color = '#ff4466';
 
                     return (
                         <div key={`${r}-${c}`} style={{
@@ -117,7 +147,7 @@ function MiniGrid({ cells, wumpusLoc }) {
                             boxShadow: `inset 0 0 0 1px ${borderColor}`,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontSize: '5px',
-                            fontFamily: '"Press Start 2P"',
+                            fontFamily: "'Press Start 2P', monospace",
                             color,
                             boxSizing: 'border-box'
                         }}>
@@ -133,15 +163,21 @@ function MiniGrid({ cells, wumpusLoc }) {
 function RLBrainView({ qHeatmap, learningCurve, rlSummary, isTraining }) {
     if (isTraining) {
         return (
-            <div style={{ display: 'flex', flexDirection: 'column', height: '100%', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-                <div className="sprite-pit-swirl" style={{ color: '#2255cc' }} />
-                <h3 style={{ color: '#2255cc', fontFamily: "'Press Start 2P', monospace", fontSize: 9 }}>TRAINING RL AGENT...</h3>
+            <div style={{
+                display: 'flex', flexDirection: 'column', height: '100%',
+                alignItems: 'center', justifyContent: 'center', gap: 16,
+            }}>
+                <div className="sprite-pit-swirl" style={{ color: '#4488ff' }} />
+                <h3 style={{
+                    color: '#4488ff',
+                    fontFamily: "'Press Start 2P', monospace",
+                    fontSize: 9, textTransform: 'uppercase',
+                }}>🤖 TRAINING RL AGENT...</h3>
             </div>
         );
     }
 
     const epsilon = rlSummary?.epsilon ?? 1.0;
-    // red to green depending on decay
     const rGauge = Math.floor(epsilon * 255);
     const gGauge = Math.floor((1 - epsilon) * 255);
     const epsColor = `rgb(${rGauge},${gGauge},0)`;
@@ -149,9 +185,13 @@ function RLBrainView({ qHeatmap, learningCurve, rlSummary, isTraining }) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             <div style={{ marginBottom: '8px', flexShrink: 0 }}>
-                <h3 style={{ color: '#2255cc', fontFamily: "'Press Start 2P', monospace", fontSize: 8, margin: '0 0 8px 0', textTransform: 'uppercase' }}>Q-LEARNING MAPPING</h3>
+                <h3 style={{
+                    color: '#4488ff',
+                    fontFamily: "'Press Start 2P', monospace",
+                    fontSize: 11, margin: '0 0 8px 0', textTransform: 'uppercase',
+                }}>🤖 Q-LEARNING MAP</h3>
                 <PixelBar
-                    label="EXPLORE RATE"
+                    label="EXPLORE"
                     value={epsilon}
                     color={epsColor}
                     showNumber={epsilon.toFixed(2)}
@@ -166,8 +206,17 @@ function RLBrainView({ qHeatmap, learningCurve, rlSummary, isTraining }) {
 
             {learningCurve && learningCurve.length > 0 && (
                 <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                    <h4 style={{ color: '#996600', fontFamily: "'Press Start 2P', monospace", fontSize: 6, margin: '0 0 4px 0', textTransform: 'uppercase' }}>REWARD CURVE</h4>
-                    <div style={{ flexGrow: 1, position: 'relative', backgroundColor: '#e8e8e8', border: '1px solid #bbb' }}>
+                    <h4 style={{
+                        color: '#ffd700',
+                        fontFamily: "'Press Start 2P', monospace",
+                        fontSize: 6, margin: '0 0 4px 0', textTransform: 'uppercase',
+                    }}>📈 REWARD CURVE</h4>
+                    <div style={{
+                        flexGrow: 1, position: 'relative',
+                        backgroundColor: '#0a0a14',
+                        border: '2px solid #5a4a6a',
+                        boxShadow: 'inset 0 0 10px rgba(0,0,0,0.5)',
+                    }}>
                         <RLRewardChart data={learningCurve} />
                     </div>
                 </div>
@@ -189,9 +238,9 @@ function RLMiniGrid({ heatmap }) {
     const interpolateColor = (val) => {
         if (maxQ === minQ) return '#1a1a2e';
         const norm = Math.max(0, Math.min(1, (val - minQ) / (maxQ - minQ)));
-        const r = Math.floor(26 + norm * (255 - 26));
-        const g = Math.floor(26 + norm * (214 - 26));
-        const b = Math.floor(46 + norm * (10 - 46));
+        const r = Math.floor(10 + norm * 200);
+        const g = Math.floor(10 + norm * 255);
+        const b = Math.floor(30 + norm * (10 - 30));
         return `rgb(${r},${g},${b})`;
     };
 
@@ -212,8 +261,9 @@ function RLMiniGrid({ heatmap }) {
             display: 'grid',
             gridTemplateColumns: `repeat(${size}, ${cellSize}px)`,
             gridTemplateRows: `repeat(${size}, ${cellSize}px)`,
-            border: '1px solid var(--border)',
-            backgroundColor: '#000'
+            border: '2px solid #5a4a6a',
+            backgroundColor: '#0a0a14',
+            boxShadow: '3px 3px 0 rgba(0,0,0,0.4)',
         }}>
             {[...heatmap].reverse().map((rowArr, revR) => {
                 const r = size - 1 - revR;
@@ -223,11 +273,12 @@ function RLMiniGrid({ heatmap }) {
                         <div key={`${r}-${c}`} style={{
                             width: cellSize, height: cellSize,
                             backgroundColor: bg,
-                            boxShadow: `inset 0 0 0 1px rgba(0,0,0,0.5)`,
+                            boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.1)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontSize: '8px',
-                            fontFamily: 'sans-serif',
-                            color: '#000'
+                            fontFamily: "'Press Start 2P', monospace",
+                            color: '#fff',
+                            textShadow: '1px 1px 0 #000',
                         }}>
                             {cell.best_action && drawArrow(cell.best_action)}
                         </div>
@@ -245,7 +296,7 @@ function RLRewardChart({ data }) {
             display: 'flex',
             height: '100%',
             alignItems: 'flex-end',
-            borderBottom: '1px solid var(--border)',
+            borderBottom: '1px solid #5a4a6a',
             position: 'absolute',
             bottom: 0, left: 0, right: 0
         }}>
@@ -260,7 +311,8 @@ function RLRewardChart({ data }) {
                             width: '4px',
                             height: `${Math.max(1, heightPct)}%`,
                             backgroundColor: color,
-                            flexShrink: 0
+                            flexShrink: 0,
+                            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)',
                         }}
                     />
                 );

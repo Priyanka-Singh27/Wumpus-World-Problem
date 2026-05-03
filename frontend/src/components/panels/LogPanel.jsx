@@ -9,13 +9,13 @@ export default function LogPanel() {
     useEffect(() => {
         if (worldState) {
             setLogs(prev => {
-                let actionStr = 'GAME UPDATE';
+                let actionStr = 'SYSTEM ONLINE';
                 if (worldState.agent.steps === 0) actionStr = `GAME START / SEED: ${worldState.seed}`;
-                else if (!worldState.agent.alive) actionStr = `AGENT DEAD — ${worldState.result}`;
+                else if (!worldState.agent.alive) actionStr = `AGENT DIED: ${worldState.result.replace(/_/g, ' ')}`;
                 else if (worldState.result === 'WIN') actionStr = worldState.agent.has_gold
-                    ? `WIN! Climbed out with gold. Score: ${worldState.agent.score}`
-                    : `CLIMBED OUT (no gold). Score: ${worldState.agent.score}`;
-                else if (worldState.result === 'TIMEOUT') actionStr = 'TIMEOUT — max steps reached';
+                    ? `MISSION SUCCESS: GOLD RETRIEVED! SCORE: ${worldState.agent.score}`
+                    : `MISSION SUCCESS: ESCAPED! SCORE: ${worldState.agent.score}`;
+                else if (worldState.result === 'TIMEOUT') actionStr = 'MISSION FAILURE: TIMEOUT';
 
                 const newLine = `> STEP ${worldState.agent.steps} — ${actionStr}`;
                 if (prev[prev.length - 1] === newLine) return prev;
@@ -27,11 +27,12 @@ export default function LogPanel() {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             <h3 style={{
-                color: '#996600',
-                fontSize: '8px', margin: '0 0 8px 0',
+                color: 'var(--gold)',
+                fontSize: '11px', margin: '0 0 8px 0',
                 fontFamily: "'Press Start 2P', monospace",
                 textTransform: 'uppercase', flexShrink: 0,
-            }}>System Log</h3>
+                textShadow: '2px 2px 0 #000'
+            }}>📜 MISSION LOG</h3>
             <div style={{ flexGrow: 1, overflow: 'hidden', display: 'flex' }}>
                 <CRTLog lines={logs} maxLines={500} />
             </div>

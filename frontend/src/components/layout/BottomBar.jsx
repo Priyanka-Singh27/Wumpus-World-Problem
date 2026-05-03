@@ -43,53 +43,53 @@ export default function BottomBar({ onReset }) {
 
     return (
         <div className="bottom-bar">
-            <div style={{ display: 'flex', gap: '16px' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                 <PixelDropdown
-                    label="AGENT"
+                    label="🎮 AGENT"
                     selected={agentType}
                     onChange={setAgent}
                     options={[
-                        { value: 'kb', label: 'KB' },
-                        { value: 'rl', label: 'RL' },
-                        { value: 'random', label: 'RANDOM' },
-                        { value: 'human', label: 'HUMAN' }
+                        { value: 'kb', label: '🧠 KB' },
+                        { value: 'rl', label: '🤖 RL' },
+                        { value: 'random', label: '🎲 RND' },
+                        { value: 'human', label: '🧑 YOU' }
                     ]}
                 />
                 <PixelDropdown
-                    label="DIFFICULTY"
+                    label="⚔️ DIFF"
                     selected={difficulty}
                     onChange={setDifficulty}
                     options={[
-                        { value: 'easy', label: 'EASY' },
-                        { value: 'medium', label: 'MED' },
-                        { value: 'hard', label: 'HARD' },
-                        { value: 'expert', label: 'EXPERT' }
+                        { value: 'easy', label: '🟢 EASY' },
+                        { value: 'medium', label: '🟡 MED' },
+                        { value: 'hard', label: '🔴 HARD' },
+                        { value: 'expert', label: '💀 PRO' }
                     ]}
                 />
                 <PixelDropdown
-                    label="FOG"
+                    label="🌫️ FOG"
                     selected={fogMode}
                     onChange={setFog}
                     options={[
-                        { value: 'full', label: 'FULL' },
-                        { value: 'adjacent', label: 'ADJACENT' },
-                        { value: 'memory', label: 'MEMORY' },
-                        { value: 'off', label: 'OFF' }
+                        { value: 'full', label: '🌑 FULL' },
+                        { value: 'adjacent', label: '🔦 ADJ' },
+                        { value: 'memory', label: '🧠 MEM' },
+                        { value: 'off', label: '☀️ OFF' }
                     ]}
                 />
                 <PixelDropdown
-                    label="SPD"
+                    label="⏩ SPD"
                     selected={speed}
                     onChange={setSpeed}
                     options={[
-                        { value: 1000, label: 'SLOW' },
-                        { value: 400, label: 'NORM' },
-                        { value: 100, label: 'FAST' },
-                        { value: 0, label: 'MAX' }
+                        { value: 1000, label: '🐌 SLOW' },
+                        { value: 400, label: '🚶 NORM' },
+                        { value: 100, label: '🏃 FAST' },
+                        { value: 0, label: '⚡ MAX' }
                     ]}
                 />
             </div>
-            <div style={{ display: 'flex', gap: '16px' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                 <PixelButton
                     label={isRunning ? '⏸ PAUSE' : '▶ RUN'}
                     color="green"
@@ -97,18 +97,18 @@ export default function BottomBar({ onReset }) {
                     disabled={agentType === 'human' || gameOver}
                 />
                 <PixelButton
-                    label="↺ RESET"
+                    label="🔄 RESET"
                     color="navy"
                     onClick={() => onReset ? onReset() : null}
                 />
                 <PixelButton
-                    label="⚡ 500 EPS"
+                    label="⚡ TRAIN"
                     color="amber"
                     onClick={handleTrain}
                     disabled={agentType !== 'rl'}
                 />
                 <PixelButton
-                    label={multiplayerMode ? "EXIT VS" : "VS AI"}
+                    label={multiplayerMode ? "🚪 EXIT" : "⚔️ VS AI"}
                     color="purple"
                     onClick={() => setMultiplayer(!multiplayerMode)}
                 />

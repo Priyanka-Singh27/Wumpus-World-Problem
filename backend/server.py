@@ -553,6 +553,12 @@ class WumpusHandler(BaseHTTPRequestHandler):
     # ── Helpers ───────────────────────────────────────────────────────────────
 
     def _send(self, status: int, data: dict):
+        # DEBUG: Check if hazards are in the state being sent
+        if isinstance(data, dict) and "state" in data:
+            cells = data["state"].get("cells", [])
+            has_any = any(c.get("has_pit") or c.get("has_wumpus") or c.get("has_gold") for row in cells for c in row)
+            print(f"[API DEBUG] Sending state. Hazards found: {has_any}")
+            
         body = json.dumps(data, default=str).encode()
         self.send_response(status)
         self._cors_headers()
