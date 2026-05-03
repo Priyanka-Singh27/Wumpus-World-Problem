@@ -83,6 +83,12 @@ export async function runBenchmark(difficulty, config) {
     return res.json();
 }
 
+export async function getGameState(sessionId, reveal = false) {
+    const query = new URLSearchParams({ session_id: sessionId, reveal: reveal.toString() });
+    const res = await fetch(`${BASE}/api/game/state?${query.toString()}`);
+    return res.json();
+}
+
 export async function previewWorld(difficulty, seed) {
     const query = new URLSearchParams({ difficulty });
     if (seed) query.set('seed', seed);

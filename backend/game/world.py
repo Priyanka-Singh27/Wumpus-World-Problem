@@ -413,15 +413,16 @@ class WumpusWorld:
         """
         Serialise world state.
 
-        reveal=True  → expose full grid (for debugging / post-game)
-        reveal=False → only expose visited cells (fog of war)
+        All cell data (pits, wumpus, gold, percepts) is always included.
+        Fog of war is handled purely by the frontend display layer.
+        The 'reveal' parameter is kept for API compatibility but no longer
+        affects the serialised output.
         """
         cells = []
         for r in range(self.size):
             row = []
             for c in range(self.size):
                 cell = self.grid[r][c]
-                visible = cell.visited or reveal
                 # Compute static percepts (breeze/stench) for this cell
                 nbrs = self._neighbours(r, c)
                 cell_breeze = any(self.grid[nr][nc].has_pit    for nr, nc in nbrs)
@@ -430,11 +431,11 @@ class WumpusWorld:
                     "row":        r,
                     "col":        c,
                     "visited":    cell.visited,
-                    "has_pit":    cell.has_pit    if visible else None,
-                    "has_wumpus": cell.has_wumpus if visible else None,
-                    "has_gold":   cell.has_gold   if visible else None,
-                    "breeze":     cell_breeze      if visible else None,
-                    "stench":     cell_stench      if visible else None,
+                    "has_pit":    cell.has_pit,
+                    "has_wumpus": cell.has_wumpus,
+                    "has_gold":   cell.has_gold,
+                    "breeze":     cell_breeze,
+                    "stench":     cell_stench,
                 })
             cells.append(row)
 
@@ -455,6 +456,7 @@ class WumpusWorld:
             "result":        self.result.value,
             "percept":       self._last_percept.to_dict(),
             "wumpus_alive":  len(self.wumpus_positions) > 0,
+            "total_gold":   sum(1 for r in range(self.size) for c in range(self.size) if self.grid[r][c].has_gold),
             "config": {
                 "size":       self.config.size,
                 "n_pits":     self.config.n_pits,

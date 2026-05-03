@@ -29,9 +29,9 @@ export default function Cell({ cell, row, col, isFogged, isCurrent, agentState, 
         else if (kbCell.safe) kbBorder = 'kb-safe';
     }
 
-    // Percept labels (shown on visited cells)
-    const showBreeze = visited && cell.breeze;
-    const showStench = visited && cell.stench;
+    // Percept labels (shown on un-fogged cells — visible when visited OR when fog is off)
+    const showBreeze = cell.breeze;
+    const showStench = cell.stench;
 
     return (
         <div

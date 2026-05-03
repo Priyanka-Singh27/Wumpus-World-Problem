@@ -7,9 +7,7 @@ export default function HeaderBar({ onOpenSeedBrowser }) {
     const score = agent?.score ?? 0;
     const arrows = agent?.arrows ?? 0;
     const steps = agent?.steps ?? 0;
-    const goldLeft = worldState
-        ? worldState.cells?.flat().filter(c => c.has_gold).length ?? 0
-        : 0;
+    const goldLeft = worldState?.total_gold ?? 0;
 
     return (
         <div className="header-bar">
